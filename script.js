@@ -1,7 +1,7 @@
 // Configuration
 const CONFIG = {
-    // IMPORTANT: If hosting on GitHub, manually paste your LIFF ID here
-    liffId: '<?!= liffId ?>'.includes('<?') ? '' : '<?!= liffId ?>', 
+    // IMPORTANT: Hardcoded LIFF ID for GitHub Pages compatibility
+    liffId: '2009603120-OxhhwblJ', 
     gasWebAppUrl: '<?!= webAppUrl ?>'.includes('<?') ? '' : '<?!= webAppUrl ?>'
 };
 
@@ -23,7 +23,7 @@ async function initLIFF() {
             console.warn("LIFF ID is empty. If you are on GitHub Pages, please fill it in script.js manually.");
         }
 
-        await liff.init({ liffId: CONFIG.liffId || '2009603120-OxhhwblJ' });
+        await liff.init({ liffId: CONFIG.liffId || 'YOUR_LIFF_ID_HERE' });
         
         if (!liff.isLoggedIn()) {
             liff.login();
