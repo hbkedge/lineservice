@@ -15,7 +15,10 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS (GAS Include) -->
-    <?!= include('style'); ?>
+    <!-- Standard CSS Link (Works on GitHub Pages) -->
+    <link rel="stylesheet" href="style.css">
+    <!-- GAS Fallback (Only works if served via GAS) -->
+    <!-- <?!= include('style'); ?> -->
 </head>
 
 <body>
@@ -148,7 +151,10 @@
 
     <!-- LIFF SDK & Custom JS (GAS Include) -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <?!= include('javascript'); ?>
+    <!-- Standard JS Load (Works on GitHub Pages) -->
+    <script src="script.js"></script>
+    <!-- GAS Fallback (Only works if served via GAS) -->
+    <!-- <?!= include('javascript'); ?> -->
 </body>
 
 </html>
