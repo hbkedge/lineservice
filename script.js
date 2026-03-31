@@ -1,7 +1,7 @@
 // Configuration
 const CONFIG = {
     liffId: '', // 將由 GAS 動態注入或手動填入
-    gasWebAppUrl: '' // 如果是串接 REST API 則需要此 URL
+    gasWebAppUrl: 'https://script.google.com/macros/s/AKfycbwGclEnQ25KiOWc4LP4dYZSmrS5GJ-A7sQa41BgM-TVYdUDDn1Q0McDSwTOPqV8qbH7gA/exec' // 如果是串接 REST API 則需要此 URL
 };
 
 // State Management
