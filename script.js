@@ -23,7 +23,7 @@ async function initLIFF() {
             console.warn("LIFF ID is empty. If you are on GitHub Pages, please fill it in script.js manually.");
         }
 
-        await liff.init({ liffId: CONFIG.liffId || 'YOUR_LIFF_ID_HERE' });
+        await liff.init({ liffId: CONFIG.liffId || '2009603120-OxhhwblJ' });
         
         if (!liff.isLoggedIn()) {
             liff.login();
