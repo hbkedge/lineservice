@@ -2,7 +2,7 @@
 const CONFIG = {
     // IMPORTANT: Hardcoded LIFF ID for GitHub Pages compatibility
     liffId: '2009603120-OxhhwblJ', 
-    gasWebAppUrl: '<?!= webAppUrl ?>'.includes('<?') ? '' : '<?!= webAppUrl ?>'
+    gasWebAppUrl: 'https://script.google.com/macros/s/AKfycbwGclEnQ25KiOWc4LP4dYZSmrS5GJ-A7sQa41BgM-TVYdUDDn1Q0McDSwTOPqV8qbH7gA/exec'
 };
 
 // State Management
