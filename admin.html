@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <title>管理後台 | 智能客服分流系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --text: #1E293B;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: white;
+            height: 100vh;
+            position: fixed;
+            border-right: 1px solid #E2E8F0;
+            padding: 20px;
+        }
+
+        .main-content {
+            margin-left: 240px;
+            padding: 40px;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #64748B;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .nav-item.active {
+            background: #EEF2FF;
+            color: var(--primary);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #E2E8F0;
+            color: #64748B;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #F1F5F9;
+            font-size: 14px;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #E0E7FF;
+            color: #4338CA;
+        }
+
+        .tag-input {
+            padding: 8px;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2 style="font-size: 20px; margin-bottom: 30px; color: var(--primary);">⚙️ 客服控制台</h2>
+        <div class="nav-item active"><i class="fa-solid fa-users"></i> 客戶名單</div>
+        <div class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> 互動日誌</div>
+        <div class="nav-item"><i class="fa-solid fa-chart-line"></i> 數據統計</div>
+        <div class="nav-item"><i class="fa-solid fa-gear"></i> 系統設定</div>
+    </div>
+    <div class="main-content">
+        <div class="card">
+            <h1 style="margin: 0; font-size: 24px;">客戶名單管理</h1>
+            <p style="color: #64748B;">即時查看所有 LINE 互動客戶與標籤狀態</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>客戶 ID / 名稱</th>
+                        <th>標籤</th>
+                        <th>最後互動</th>
+                        <th>當前流程</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table-body">
+                    <!-- Data will be injected here -->
+                    <tr>
+                        <td colspan="5" style="text-align:center;">載入中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function loadUsers() {
+            google.script.run
+                .withSuccessHandler((users) => {
+                    const tbody = document.getElementById('user-table-body');
+                    tbody.innerHTML = '';
+                    users.forEach(user => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><img src="${user.pictureUrl || 'https://via.placeholder.com/32'}" class="avatar"> <b>${user.displayName}</b><br><small>${user.userId}</small></td>
+                            <td>${user.tags.split(',').map(t => `<span class="badge">${t}</span>`).join(' ')}</td>
+                            <td>${new Date(user.lastInteraction).toLocaleString()}</td>
+                            <td>${user.currentFlow}</td>
+                            <td><button onclick="editTags('${user.userId}')">修改標籤</button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                })
+                .getAllUsers();
+        }
+
+        window.onload = loadUsers;
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,161 @@
+<script>
+    // Configuration
+    const CONFIG = {
+        liffId: '<?!= liffId ?>', // 由 GAS 動態注入
+        gasWebAppUrl: '<?!= webAppUrl ?>'
+    };
+
+    // State Management
+    let userProfile = {
+        userId: '',
+        displayName: '',
+        pictureUrl: '',
+        tags: []
+    };
+
+    /**
+     * Initialize LIFF
+     */
+    async function initLIFF() {
+        try {
+            await liff.init({ liffId: CONFIG.liffId });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return;
+            }
+
+            // 取得個人檔案
+            const profile = await liff.getProfile();
+            userProfile.userId = profile.userId;
+            userProfile.displayName = profile.displayName;
+            userProfile.pictureUrl = profile.pictureUrl;
+
+            // 從 GAS 獲取用戶標籤與狀態
+            await syncUserData();
+
+            // 更新介面
+            updateProfileUI();
+
+            // 隱藏載入畫面
+            hideLoading();
+
+            console.log('LIFF Initialized successfully');
+        } catch (err) {
+            console.error('LIFF initialization failed', err);
+            // 如果是在一般瀏覽器測試，顯示模擬數據
+            mockProfile();
+        }
+    }
+
+    /**
+     * 與 GAS 後台同步用戶資料
+     */
+    async function syncUserData() {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler((data) => {
+                    userProfile.tags = data.tags ? data.tags.split(',').map(t => t.trim()) : [];
+                    resolve(data);
+                })
+                .withFailureHandler((err) => {
+                    console.error('Sync failed', err);
+                    resolve(null);
+                })
+                .getOrCreateUser(userProfile.userId);
+        });
+    }
+
+    /**
+     * Update UI with Profile data
+     */
+    function updateProfileUI() {
+        document.getElementById('user-name').textContent = userProfile.displayName;
+        document.getElementById('user-img').src = userProfile.pictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lucky';
+        document.getElementById('user-img-header').src = userProfile.pictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lucky';
+        document.getElementById('user-profile').classList.remove('hidden');
+
+        renderTags(userProfile.tags.length > 0 ? userProfile.tags : ['新客']);
+    }
+
+    /**
+     * Render Tags
+     */
+    function renderTags(tags) {
+        const container = document.getElementById('user-tags');
+        container.innerHTML = '';
+        tags.forEach(tag => {
+            const span = document.createElement('span');
+            span.className = 'tag-badge';
+            span.textContent = tag;
+            container.appendChild(span);
+        });
+    }
+
+    /**
+     * Navigation logic (SPA)
+     */
+    function navigateTo(screenId) {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => s.classList.add('hidden'));
+
+        const target = document.getElementById(screenId);
+        if (target) {
+            target.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+    }
+
+    /**
+     * Submit Booking
+     */
+    async function submitBooking() {
+        const service = document.getElementById('booking-service').value;
+        const date = document.getElementById('booking-date').value;
+
+        if (!date) {
+            alert('請選擇預約日期');
+            return;
+        }
+
+        showLoading();
+
+        const message = `🔔 新預約申請\n項目：${service}\n日期：${date}`;
+
+        try {
+            if (liff.isInClient()) {
+                await liff.sendMessages([{ type: 'text', text: message }]);
+                alert('預約已提交！');
+                liff.closeWindow();
+            } else {
+                console.log('Submitting to GAS...', { service, date });
+                google.script.run
+                    .withSuccessHandler(() => {
+                        hideLoading();
+                        alert('預約成功！');
+                        navigateTo('screen-home');
+                    })
+                    .logInteraction(userProfile.userId, 'Booking', `Service: ${service}, Date: ${date}`);
+            }
+        } catch (error) {
+            console.error('Submission failed', error);
+            alert('提交失敗，請稍後再試。');
+            hideLoading();
+        }
+    }
+
+    function showLoading() { document.getElementById('loading').classList.add('active'); }
+    function hideLoading() { document.getElementById('loading').classList.remove('active'); }
+
+    function mockProfile() {
+        userProfile = {
+            userId: 'U123456789',
+            displayName: '測試用戶 (訪客)',
+            pictureUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lucky',
+            tags: ['開發中', 'VIP']
+        };
+        updateProfileUI();
+        hideLoading();
+    }
+
+    window.onload = () => { initLIFF(); };
+</script>

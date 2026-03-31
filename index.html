@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE 分流客服系統 | 智能客戶中心</title>
+    <meta name="description" content="全方位智能 LINE 客服分流管理系統，提供預約、諮詢、標籤與追蹤流程。">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS (GAS Include) -->
+    <?!= include('style'); ?>
+</head>
+
+<body>
+    <div id="app" class="app-container">
+        <!-- Loading Overlay -->
+        <div id="loading" class="overlay active">
+            <div class="loader"></div>
+            <p>正在載入數據中...</p>
+        </div>
+
+        <!-- Navigation Bar (Mobile Style) -->
+        <header class="app-header">
+            <div class="header-content">
+                <i class="fa-solid fa-headset brand-icon"></i>
+                <h1 class="brand-name">智能客服</h1>
+                <div id="user-profile" class="user-avatar-small hidden">
+                    <img id="user-img-header" src="" alt="User Avatar">
+                </div>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <!-- Screen: Profile & Entry (主畫面) -->
+            <section id="screen-home" class="screen active">
+                <div class="hero-card">
+                    <div class="user-info">
+                        <img id="user-img" src="https://via.placeholder.com/100" alt="Avatar" class="user-avatar-large">
+                        <div class="user-text">
+                            <h2 id="user-name">載入中...</h2>
+                            <div id="user-tags" class="tag-container">
+                                <!-- Tags will be injected here -->
+                                <span class="tag-badge empty">讀取中</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-grid">
+                    <button class="menu-item" onclick="navigateTo('screen-booking')">
+                        <div class="menu-icon bg-gradient-blue">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </div>
+                        <span class="menu-label">線上預約</span>
+                        <p class="menu-desc">即時排程省時便利</p>
+                    </button>
+                    <button class="menu-item" onclick="navigateTo('screen-support')">
+                        <div class="menu-icon bg-gradient-indigo">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <span class="menu-label">真人客服</span>
+                        <p class="menu-desc">一對一排除困難</p>
+                    </button>
+                    <button class="menu-item" onclick="navigateTo('screen-faq')">
+                        <div class="menu-icon bg-gradient-purple">
+                            <i class="fa-solid fa-circle-question"></i>
+                        </div>
+                        <span class="menu-label">常見問題</span>
+                        <p class="menu-desc">60秒解決您的疑惑</p>
+                    </button>
+                    <button class="menu-item" onclick="navigateTo('screen-orders')">
+                        <div class="menu-icon bg-gradient-teal">
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                        <span class="menu-label">訂單查詢</span>
+                        <p class="menu-desc">隨時掌握貨態狀況</p>
+                    </button>
+                </div>
+
+                <div class="promo-banner">
+                    <div class="banner-text">
+                        <h3>限時活動驚喜</h3>
+                        <p>完成預約即享 9 折優惠</p>
+                    </div>
+                    <i class="fa-solid fa-gift banner-icon"></i>
+                </div>
+            </section>
+
+            <!-- Screen: Booking (預約流程) -->
+            <section id="screen-booking" class="screen hidden">
+                <div class="section-header">
+                    <button class="btn-back" onclick="navigateTo('screen-home')"><i
+                            class="fa-solid fa-chevron-left"></i> 返回</button>
+                    <h2>選擇預約時間</h2>
+                </div>
+                <div class="form-container">
+                    <div class="input-group">
+                        <label for="booking-service">預約類別</label>
+                        <select id="booking-service" class="custom-select">
+                            <option value="consult">專業諮詢</option>
+                            <option value="repair">售後維護</option>
+                            <option value="design">專屬設計</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="booking-date">選擇日期</label>
+                        <input type="date" id="booking-date" class="custom-input">
+                    </div>
+                    <button class="btn-primary ripple" onclick="submitBooking()">確認提交預約</button>
+                </div>
+            </section>
+
+            <!-- Screen: FAQ (常見問題) -->
+            <section id="screen-faq" class="screen hidden">
+                <div class="section-header">
+                    <button class="btn-back" onclick="navigateTo('screen-home')"><i
+                            class="fa-solid fa-chevron-left"></i> 返回</button>
+                    <h2>常見問題解答</h2>
+                </div>
+                <div class="faq-list">
+                    <details class="faq-item">
+                        <summary>營業時間為何？</summary>
+                        <div class="faq-content">我們的營業時間為週一至週五 09:00 - 18:00。</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>如何更改預約？</summary>
+                        <div class="faq-content">請在預約時間 24 小時前，透過真人客服聯繫我們進行變更。</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>有沒有停車位？</summary>
+                        <div class="faq-content">門市正後方提供客戶專屬免費停車位。</div>
+                    </details>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2026 Smart Service. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- LIFF SDK & Custom JS (GAS Include) -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <?!= include('javascript'); ?>
+</body>
+
+</html>
