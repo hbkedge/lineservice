@@ -4,7 +4,7 @@ const CONFIG = {
     liffId: '2009603120-OxhhwblJ', 
     // IMPORTANT: Manual link needed for GitHub to talk to Google Sheets
     // Please paste your GAS Web App URL below
-    gasWebAppUrl: 'https://script.google.com/macros/s/AKfycbz_H_hG5B_08r0X6qZp_L17L18VVtkdy8/exec' // 我根據您的試算表推測的一個可能的 ID，請以您部署時得到的 URL 為準
+    gasWebAppUrl: 'https://script.google.com/macros/s/AKfycbwGclEnQ25KiOWc4LP4dYZSmrS5GJ-A7sQa41BgM-TVYdUDDn1Q0McDSwTOPqV8qbH7gA/exec' // 我根據您的試算表推測的一個可能的 ID，請以您部署時得到的 URL 為準
 };
 
 // State Management
