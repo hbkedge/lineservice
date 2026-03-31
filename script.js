@@ -145,29 +145,30 @@ async function submitBooking() {
     const message = `🔔 新預約申請\n項目：${service}\n日期：${date}`;
 
     try {
-        if (liff.isInClient()) {
-            await liff.sendMessages([{ type: 'text', text: message }]);
-            alert('預約已提交！');
-            liff.closeWindow();
-        } else {
-            // Environment Check for Backend call
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run
-                    .withSuccessHandler(() => {
-                        hideLoading();
-                        alert('預約成功！');
-                        navigateTo('screen-home');
-                    })
-                    .logInteraction(userProfile.userId, 'Booking', `Service: ${service}, Date: ${date}`);
-            } else {
-                // Pure GitHub / Browser fallback
-                console.log('Submitting (Mock)...', { service, date });
-                setTimeout(() => {
+        // Environment Check for Backend call (Preferred)
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler(() => {
                     hideLoading();
-                    alert('預約成功 (模擬發送)！\n在 GitHub 環境下無法直接存取 Google Sheets。');
-                    navigateTo('screen-home');
-                }, 1000);
-            }
+                    if (liff.isInClient()) {
+                        liff.sendMessages([{ type: 'text', text: message }]);
+                    }
+                    alert('預約已提交且記錄已保存！');
+                    if (liff.isInClient()) {
+                        liff.closeWindow();
+                    } else {
+                        navigateTo('screen-home');
+                    }
+                })
+                .saveBooking(userProfile.userId, service, date);
+        } else {
+            // Pure GitHub / Browser fallback
+            console.log('Submitting (Mock)...', { service, date });
+            setTimeout(() => {
+                hideLoading();
+                alert('預約成功 (模擬發送)！\n在 GitHub 環境下無法直接存取 Google Sheets。');
+                navigateTo('screen-home');
+            }, 1000);
         }
     } catch (error) {
         console.error('Submission failed', error);

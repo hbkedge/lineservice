@@ -126,18 +126,23 @@
 
         try {
             if (liff.isInClient()) {
-                await liff.sendMessages([{ type: 'text', text: message }]);
-                alert('預約已提交！');
-                liff.closeWindow();
+                google.script.run
+                    .withSuccessHandler(() => {
+                        hideLoading();
+                        liff.sendMessages([{ type: 'text', text: message }]);
+                        alert('預約已提交！');
+                        liff.closeWindow();
+                    })
+                    .saveBooking(userProfile.userId, service, date);
             } else {
                 console.log('Submitting to GAS...', { service, date });
                 google.script.run
                     .withSuccessHandler(() => {
                         hideLoading();
-                        alert('預約成功！');
+                        alert('預約成功及記錄已保存！');
                         navigateTo('screen-home');
                     })
-                    .logInteraction(userProfile.userId, 'Booking', `Service: ${service}, Date: ${date}`);
+                    .saveBooking(userProfile.userId, service, date);
             }
         } catch (error) {
             console.error('Submission failed', error);
