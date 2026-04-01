@@ -137,46 +137,67 @@ async function submitBooking() {
 /**
  * --- 重點：真人客服轉接 ---
  */
+/**
+ * --- 重點：真人客服轉接 (優化版) ---
+ */
 async function startLiveChat() {
     const btn = document.getElementById('btn-start-chat');
     if (!btn) return;
+
+    // 1. UI 反饋
     btn.disabled = true;
-    btn.textContent = '轉接中...';
+    btn.textContent = '正在連線中...';
+    btn.style.opacity = '0.7';
 
-    // GAS 環境
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-            .withSuccessHandler(() => {
-                document.getElementById('support-status').classList.remove('hidden');
-                btn.textContent = '轉接成功';
-                alert('已為您轉接真人客服！請關閉視窗並在聊天室發送訊息。');
-            })
-            .updateLiveAgentStatus(userProfile.userId, true);
-    }
-    // GitHub 環境
-    else if (CONFIG.gasWebAppUrl) {
-        const payload = {
-            action: 'toggle_live_agent',
-            userId: userProfile.userId,
-            status: true
-        };
+    try {
+        const userId = userProfile.userId || (liff.isLoggedIn() ? (await liff.getProfile()).userId : 'anonymous');
 
-        fetch(CONFIG.gasWebAppUrl, {
-            mode: 'no-cors',
-            method: 'POST',
-            body: JSON.stringify(payload)
-        })
-            .then(() => {
-                document.getElementById('support-status').classList.remove('hidden');
-                btn.textContent = '轉接成功';
-                alert('請求已送出！請至聊天室發送您的疑問。');
-            })
-            .catch(err => {
-                console.error(err);
-                btn.disabled = false;
-                btn.textContent = '點此開始真人對話';
+        // 方案 A: GAS 原生通訊
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler(() => handleSupportSuccess(btn))
+                .withFailureHandler((err) => handleSupportError(btn, err))
+                .updateLiveAgentStatus(userId, true);
+        }
+        // 方案 B: API Fetch (GitHub 環境)
+        else if (CONFIG.gasWebAppUrl) {
+            const payload = {
+                action: 'toggle_live_agent',
+                userId: userId,
+                status: true
+            };
+
+            fetch(CONFIG.gasWebAppUrl, {
+                mode: 'no-cors',
+                method: 'POST',
+                body: JSON.stringify(payload)
+            }).then(() => {
+                handleSupportSuccess(btn);
+            }).catch(err => {
+                handleSupportError(btn, err);
             });
+        } else {
+            throw new Error("未設定後台網址");
+        }
+    } catch (err) {
+        handleSupportError(btn, err);
     }
+}
+
+function handleSupportSuccess(btn) {
+    document.getElementById('support-status').classList.remove('hidden');
+    btn.textContent = '轉接成功';
+    btn.style.background = '#10B981';
+    btn.style.opacity = '1';
+    alert('✅ 已成功記錄您的轉接需求！專員將收到通知。請現在關閉視窗，直接在 LINE 聊天室中發送您的問題。');
+}
+
+function handleSupportError(btn, err) {
+    console.error('Support failure:', err);
+    alert('❌ 轉接發生錯誤：' + (err.message || '連線逾時'));
+    btn.disabled = false;
+    btn.textContent = '點此開始真人對話';
+    btn.style.opacity = '1';
 }
 
 function showLoading() { document.getElementById('loading').classList.add('active'); }
@@ -194,4 +215,16 @@ function mockProfile() {
     hideLoading();
 }
 
-window.onload = () => { initLIFF(); };
+// 綁定事件以提高穩定性
+function bindEvents() {
+    const chatBtn = document.getElementById('btn-start-chat');
+    if (chatBtn) {
+        chatBtn.onclick = null; // 移除 HTML 上的 onclick 直接轉為事件監聽
+        chatBtn.addEventListener('click', startLiveChat);
+    }
+}
+
+window.onload = () => {
+    initLIFF();
+    setTimeout(bindEvents, 500); // 延遲綁定確保元件已載入
+};
