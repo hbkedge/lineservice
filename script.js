@@ -138,6 +138,51 @@ async function submitBooking() {
  * --- 重點：真人客服轉接 ---
  */
 /**
+ * --- 訂單查詢 ---
+ */
+async function loadUserOrders() {
+    navigateTo('screen-orders');
+    const container = document.getElementById('order-list');
+    container.innerHTML = '<p style="text-align:center;">載入中...</p>';
+
+    const userId = userProfile.userId || (liff.isLoggedIn() ? (await liff.getProfile()).userId : 'anonymous');
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(renderOrders).getUserOrders(userId);
+    } else if (CONFIG.gasWebAppUrl) {
+        fetch(`${CONFIG.gasWebAppUrl}?action=get_user_orders&userId=${userId}`)
+            .then(res => res.json())
+            .then(renderOrders);
+    }
+}
+
+function renderOrders(orders) {
+    const container = document.getElementById('order-list');
+    if (!orders || orders.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding: 40px;"><i class="fa-solid fa-folder-open" style="font-size:32px; color:#E2E8F0; margin-bottom:10px;"></i><p style="color:#94A3B8;">無任何訂單紀錄</p></div>';
+        return;
+    }
+    container.innerHTML = orders.map(order => `
+        <div class="card" style="margin-bottom: 15px; border-radius: 12px; border: 1px solid #F1F5F9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <span style="font-weight:700; color:var(--primary);">${order.orderId}</span>
+                <span class="badge" style="${getStatusStyle(order.status)}">${order.status}</span>
+            </div>
+            <div style="font-size:14px; color:#1E293B; margin-bottom:5px;">${order.items}</div>
+            <div style="color:var(--primary); font-weight:600; margin-bottom:10px;">總額: $${order.amount}</div>
+            ${order.trackingNo ? `<div style="font-size:12px; background:#F8FAFC; padding:8px; border-radius:6px; color:#64748B;">物流單號: ${order.trackingNo}</div>` : ''}
+        </div>
+    `).join('');
+}
+
+function getStatusStyle(status) {
+    if (status === '已送達' || status === '已完成') return 'background:#DEF7EC; color:#03543F;';
+    if (status === '已出貨' || status === '配送中') return 'background:#E1EFFE; color:#1E429F;';
+    if (status === '待處理') return 'background:#FEF3C7; color:#92400E;';
+    return 'background:#F3F4F6; color:#4B5563;';
+}
+
+/**
  * --- 重點：真人客服轉接 (優化版) ---
  */
 async function startLiveChat() {

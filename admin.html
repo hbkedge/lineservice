@@ -111,13 +111,38 @@
     <div class="sidebar">
         <h2 style="font-size: 20px; margin-bottom: 30px; color: var(--primary);">⚙️ 客服控制台</h2>
         <div class="nav-item active" onclick="switchScreen('users', this)"><i class="fa-solid fa-users"></i> 客戶名單</div>
+        <div class="nav-item" onclick="switchScreen('orders', this)"><i class="fa-solid fa-box-archive"></i> 訂單管理</div>
         <div class="nav-item" onclick="switchScreen('logs', this)"><i class="fa-solid fa-clock-rotate-left"></i> 互動日誌
         </div>
         <div class="nav-item" onclick="switchScreen('stats', this)"><i class="fa-solid fa-chart-line"></i> 數據統計</div>
         <div class="nav-item" onclick="switchScreen('config', this)"><i class="fa-solid fa-gear"></i> 系統設定</div>
     </div>
     <div class="main-content">
-        <!-- Screen: Users -->
+        <!-- Screen: Orders (Admin) -->
+        <div id="screen-orders" class="admin-screen" style="display:none;">
+            <div class="card">
+                <h1 style="margin: 0; font-size: 24px;">📦 訂單管理</h1>
+                <p style="color: #64748B;">處理客戶訂單、填寫物流單號與更新狀態</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>單號 / 客戶</th>
+                            <th>品項</th>
+                            <th>金額</th>
+                            <th>狀態</th>
+                            <th>物流單號</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-table-body">
+                        <tr>
+                            <td colspan="6" style="text-align:center;">載入中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
         <div id="screen-users" class="admin-screen">
             <div class="card">
                 <h1 style="margin: 0; font-size: 24px;">客戶名單管理</h1>
@@ -310,6 +335,55 @@
             if (screenId === 'logs') loadLogs();
             if (screenId === 'stats') loadStats();
             if (screenId === 'config') loadConfigs();
+            if (screenId === 'orders') loadAdminOrders();
+        }
+
+        function loadAdminOrders() {
+            const tbody = document.getElementById('order-table-body');
+            tbody.innerHTML = '載入中...';
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(renderAdminOrders).getAllOrders();
+            } else {
+                fetch(`${GAS_URL}?action=get_all_orders`).then(res => res.json()).then(renderAdminOrders);
+            }
+        }
+
+        function renderAdminOrders(orders) {
+            const tbody = document.getElementById('order-table-body');
+            tbody.innerHTML = orders.map(order => `
+                <tr>
+                    <td><b>${order.orderId}</b><br><small>${order.userName}</small></td>
+                    <td>${order.items}</td>
+                    <td>$${order.amount}</td>
+                    <td><span class="badge" style="${getTypeStyle(order.status)}">${order.status}</span></td>
+                    <td><input type="text" id="track-${order.orderId}" value="${order.trackingNo || ''}" style="width:100px; padding:4px;"></td>
+                    <td>
+                        <select onchange="updateStatus('${order.orderId}', this.value)" style="padding:4px;">
+                            <option value="">變更狀態</option>
+                            <option value="待處理">待處理</option>
+                            <option value="配送中">配送中</option>
+                            <option value="已出貨">已出貨</option>
+                            <option value="已完成">已完成</option>
+                        </select>
+                        <button onclick="saveTrack('${order.orderId}')" style="padding:4px 8px; background:#4F46E5; color:white; border:none; border-radius:4px; margin-left:5px;">更新單號</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function saveTrack(orderId) {
+            const track = document.getElementById('track-' + orderId).value;
+            updateStatus(orderId, undefined, track);
+        }
+
+        function updateStatus(orderId, status, track) {
+            const payload = { action: 'update_order_status', orderId, status, trackingNo: track };
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(() => { alert('已更新'); loadAdminOrders(); }).updateOrderStatus(orderId, status, track);
+            } else {
+                fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+                    .then(() => { alert('請求已發送'); setTimeout(loadAdminOrders, 1000); });
+            }
         }
 
         function loadConfigs() {
