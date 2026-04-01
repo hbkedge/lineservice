@@ -142,47 +142,88 @@
     </div>
 
     <script>
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwGclEnQ25KiOWc4LP4dYZSmrS5GJ-A7sQa41BgM-TVYdUDDn1Q0McDSwTOPqV8qbH7gA/exec';
+
         function loadUsers() {
-            google.script.run
-                .withSuccessHandler((users) => {
-                    const tbody = document.getElementById('user-table-body');
-                    tbody.innerHTML = '';
-                    users.forEach(user => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td><img src="${user.pictureUrl || 'https://via.placeholder.com/32'}" class="avatar"> <b>${user.displayName}</b><br><small>${user.userId}</small></td>
-                            <td>${user.tags.split(',').map(t => `<span class="badge">${t}</span>`).join(' ')}</td>
-                            <td>${new Date(user.lastInteraction).toLocaleString()}</td>
-                            <td>${user.currentFlow}</td>
-                            <td>
-                                <span class="badge ${user.isLiveAgentMode ? 'badge-danger' : 'badge-success'}" style="${user.isLiveAgentMode ? 'background:#FEE2E2; color:#B91C1C;' : 'background:#DCFCE7; color:#15803D;'}">
-                                    ${user.isLiveAgentMode ? '🔴 真人' : '🤖 自動'}
-                                </span>
-                            </td>
-                            <td>
-                                <button onclick="toggleAgent('${user.userId}', ${user.isLiveAgentMode})">${user.isLiveAgentMode ? '轉回自動' : '接手客服'}</button>
-                                <button onclick="openChat('${user.userId}', '${user.displayName}')" style="background:#4F46E5; color:white; border:none; border-radius:4px;">發送訊息</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                })
-                .getAllUsers();
+            const tbody = document.getElementById('user-table-body');
+
+            // 1. GAS 原生模式 (當直接作為 GAS Web App 執行時)
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(renderUserTable)
+                    .withFailureHandler(handleError)
+                    .getAllUsers();
+            }
+            // 2. API Fetch 模式 (當作為 GitHub Pages 執行時)
+            else if (GAS_URL) {
+                fetch(`${GAS_URL}?action=get_users`)
+                    .then(res => res.json())
+                    .then(renderUserTable)
+                    .catch(handleError);
+            } else {
+                handleError({ message: '尚未設定 GAS API 網址' });
+            }
+        }
+
+        function renderUserTable(users) {
+            const tbody = document.getElementById('user-table-body');
+            if (!users || users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: #94A3B8;">📭 尚無客戶資料</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                const tagsHtml = (user.tags || '新客').split(',')
+                    .map(t => `<span class="badge" style="margin-right:4px;">${t.trim()}</span>`).join('');
+
+                tr.innerHTML = `
+                    <td>
+                        <img src="${user.pictureUrl || 'https://via.placeholder.com/32'}" class="avatar"> 
+                        <b>${user.displayName || '未命名'}</b><br>
+                        <small style="color:#94A3B8;">${user.userId}</small>
+                    </td>
+                    <td>${tagsHtml}</td>
+                    <td>${user.lastInteraction ? new Date(user.lastInteraction).toLocaleString() : 'N/A'}</td>
+                    <td>${user.currentFlow || 'Default'}</td>
+                    <td>
+                        <span class="badge" style="${user.isLiveAgentMode ? 'background:#FEE2E2; color:#B91C1C;' : 'background:#DCFCE7; color:#15803D;'}">
+                            ${user.isLiveAgentMode ? '🔴 真人' : '🤖 自動'}
+                        </span>
+                    </td>
+                    <td>
+                        <button onclick="toggleAgent('${user.userId}', ${user.isLiveAgentMode})">${user.isLiveAgentMode ? '轉回自動' : '接手客服'}</button>
+                        <button onclick="openChat('${user.userId}', '${user.displayName}')" style="background:#4F46E5; color:white; border:none; padding: 4px 8px; border-radius: 4px;">發訊</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function handleError(err) {
+            console.error('Loader error:', err);
+            document.getElementById('user-table-body').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#EF4444; padding:20px;">載入失敗：${err.message || '連線錯誤'}</td></tr>`;
         }
 
         function toggleAgent(userId, isLive) {
             const status = !isLive;
-            google.script.run
-                .withSuccessHandler(() => { alert('狀態已更新'); loadUsers(); })
-                .updateLiveAgentStatus(userId, status);
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(loadUsers).updateLiveAgentStatus(userId, status);
+            } else {
+                fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'toggle_live_agent', userId, status }) })
+                    .then(() => setTimeout(loadUsers, 1000));
+            }
         }
 
         function openChat(userId, name) {
-            const text = prompt(`發送訊息給 ${name} (${userId}):`);
-            if (text) {
-                google.script.run
-                    .withSuccessHandler(() => alert('訊息已推送！'))
-                    .sendAdminMessage(userId, text);
+            const text = prompt(`發送訊息給 ${name}:`);
+            if (!text) return;
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(() => alert('發送成功')).sendAdminMessage(userId, text);
+            } else {
+                fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'send_message', userId, text }) })
+                    .then(() => alert('指令已發送'));
             }
         }
 
