@@ -191,6 +191,23 @@
                 </div>
             </div>
         </div>
+
+        <!-- Screen: Config -->
+        <div id="screen-config" class="admin-screen" style="display:none;">
+            <div class="card">
+                <h1 style="margin: 0; font-size: 24px;">⚙️ 系統設定</h1>
+                <p style="color: #64748B;">管理 LINE Bot Token 與 LIFF ID 等核心參數</p>
+
+                <div id="config-list" style="margin-top: 20px;">
+                    <p style="color:#94A3B8;">載入設定中...</p>
+                </div>
+
+                <div
+                    style="margin-top: 30px; padding: 20px; background: #FFFBEB; border-radius: 8px; border: 1px solid #FEF3C7; color: #92400E; font-size: 14px;">
+                    💡 修改設定後，請記得「發布新版本」以確保後端生效。
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -292,6 +309,44 @@
             if (screenId === 'users') loadUsers();
             if (screenId === 'logs') loadLogs();
             if (screenId === 'stats') loadStats();
+            if (screenId === 'config') loadConfigs();
+        }
+
+        function loadConfigs() {
+            const container = document.getElementById('config-list');
+            container.innerHTML = '載入中...';
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(renderConfigs).getAllConfigs();
+            } else {
+                fetch(`${GAS_URL}?action=get_all_configs`).then(res => res.json()).then(renderConfigs);
+            }
+        }
+
+        function renderConfigs(configs) {
+            const container = document.getElementById('config-list');
+            container.innerHTML = configs.map(cfg => `
+                <div style="margin-bottom: 20px; border-bottom: 1px solid #F1F5F9; padding-bottom: 15px;">
+                    <div style="font-weight:600; margin-bottom:5px;">${cfg.key}</div>
+                    <div style="color:#64748B; font-size:12px; margin-bottom:8px;">${cfg.description}</div>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="cfg-${cfg.key}" value="${cfg.value}" style="flex:1; padding:8px; border:1px solid #E2E8F0; border-radius:4px;">
+                        <button onclick="saveConfig('${cfg.key}')" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">儲存</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveConfig(key) {
+            const val = document.getElementById('cfg-' + key).value;
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(() => alert('已儲存！')).setConfig(key, val);
+            } else {
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ action: 'update_config', key: key, value: val })
+                }).then(() => alert('儲存指令已送出'));
+            }
         }
 
         function loadStats() {
