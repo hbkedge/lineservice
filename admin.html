@@ -110,34 +110,69 @@
 <body>
     <div class="sidebar">
         <h2 style="font-size: 20px; margin-bottom: 30px; color: var(--primary);">⚙️ 客服控制台</h2>
-        <div class="nav-item active"><i class="fa-solid fa-users"></i> 客戶名單</div>
-        <div class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> 互動日誌</div>
-        <div class="nav-item"><i class="fa-solid fa-chart-line"></i> 數據統計</div>
-        <div class="nav-item"><i class="fa-solid fa-gear"></i> 系統設定</div>
+        <div class="nav-item active" onclick="switchScreen('users', this)"><i class="fa-solid fa-users"></i> 客戶名單</div>
+        <div class="nav-item" onclick="switchScreen('logs', this)"><i class="fa-solid fa-clock-rotate-left"></i> 互動日誌
+        </div>
+        <div class="nav-item" onclick="switchScreen('stats', this)"><i class="fa-solid fa-chart-line"></i> 數據統計</div>
+        <div class="nav-item" onclick="switchScreen('config', this)"><i class="fa-solid fa-gear"></i> 系統設定</div>
     </div>
     <div class="main-content">
-        <div class="card">
-            <h1 style="margin: 0; font-size: 24px;">客戶名單管理</h1>
-            <p style="color: #64748B;">即時查看所有 LINE 互動客戶與標籤狀態</p>
+        <!-- Screen: Users -->
+        <div id="screen-users" class="admin-screen">
+            <div class="card">
+                <h1 style="margin: 0; font-size: 24px;">客戶名單管理</h1>
+                <p style="color: #64748B;">即時查看所有 LINE 互動客戶與標籤狀態</p>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>客戶 ID / 名稱</th>
-                        <th>標籤</th>
-                        <th>最後互動</th>
-                        <th>當前流程</th>
-                        <th>客服狀態</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="user-table-body">
-                    <!-- Data will be injected here -->
-                    <tr>
-                        <td colspan="5" style="text-align:center;">載入中...</td>
-                    </tr>
-                </tbody>
-            </table>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>客戶 ID / 名稱</th>
+                            <th>標籤</th>
+                            <th>最後互動</th>
+                            <th>當前流程</th>
+                            <th>客服狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body">
+                        <tr>
+                            <td colspan="6" style="text-align:center;">載入中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Screen: Logs (互動日誌) -->
+        <div id="screen-logs" class="admin-screen" style="display:none;">
+            <div class="card">
+                <h1 style="margin: 0; font-size: 24px;">📝 互動日誌 (最近 100 筆)</h1>
+                <p style="color: #64748B;">所有用戶與系統的互動歷史</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>時間</th>
+                            <th>用戶 ID</th>
+                            <th>類型</th>
+                            <th>內容 / 參數</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body">
+                        <tr>
+                            <td colspan="4" style="text-align:center;">請先點擊選單載入數據</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Screen: Stats -->
+        <div id="screen-stats" class="admin-screen" style="display:none;">
+            <div class="card">
+                <h1>數據統計</h1>
+                <p>開發中...</p>
+            </div>
         </div>
     </div>
 
@@ -225,6 +260,56 @@
                 fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'send_message', userId, text }) })
                     .then(() => alert('指令已發送'));
             }
+        }
+
+        function switchScreen(screenId, el) {
+            // 切換 Active Class
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+
+            // 切換 畫面
+            document.querySelectorAll('.admin-screen').forEach(scr => scr.style.display = 'none');
+            document.getElementById('screen-' + screenId).style.display = 'block';
+
+            // 自動觸發載入
+            if (screenId === 'users') loadUsers();
+            if (screenId === 'logs') loadLogs();
+        }
+
+        function loadLogs() {
+            const tbody = document.getElementById('log-table-body');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">正在同步日誌...</td></tr>';
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(renderLogTable).getAllInteractions();
+            } else {
+                fetch(`${GAS_URL}?action=get_interactions_all`) // 在 Code.js 也要補上這個 action
+                    .then(res => res.json())
+                    .then(renderLogTable);
+            }
+        }
+
+        function renderLogTable(logs) {
+            const tbody = document.getElementById('log-table-body');
+            if (!logs || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">尚無日誌資料</td></tr>';
+                return;
+            }
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td style="white-space:nowrap;">${new Date(log.timestamp).toLocaleString()}</td>
+                    <td><small>${log.userId}</small></td>
+                    <td><span class="badge" style="${getTypeStyle(log.type)}">${log.type}</span></td>
+                    <td style="max-width:300px; word-break:break-all;">${log.content}</td>
+                </tr>
+            `).join('');
+        }
+
+        function getTypeStyle(type) {
+            if (type === 'UserMessage') return 'background:#DBEAFE; color:#1E40AF;';
+            if (type === 'Postback') return 'background:#F3E8FF; color:#6B21A8;';
+            if (type === 'BotResponse') return 'background:#DCFCE7; color:#166534;';
+            return 'background:#F3F4F6; color:#374151;';
         }
 
         window.onload = loadUsers;
