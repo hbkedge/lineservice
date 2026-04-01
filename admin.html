@@ -127,6 +127,7 @@
                         <th>標籤</th>
                         <th>最後互動</th>
                         <th>當前流程</th>
+                        <th>客服狀態</th>
                         <th>操作</th>
                     </tr>
                 </thead>
@@ -153,12 +154,36 @@
                             <td>${user.tags.split(',').map(t => `<span class="badge">${t}</span>`).join(' ')}</td>
                             <td>${new Date(user.lastInteraction).toLocaleString()}</td>
                             <td>${user.currentFlow}</td>
-                            <td><button onclick="editTags('${user.userId}')">修改標籤</button></td>
+                            <td>
+                                <span class="badge ${user.isLiveAgentMode ? 'badge-danger' : 'badge-success'}" style="${user.isLiveAgentMode ? 'background:#FEE2E2; color:#B91C1C;' : 'background:#DCFCE7; color:#15803D;'}">
+                                    ${user.isLiveAgentMode ? '🔴 真人' : '🤖 自動'}
+                                </span>
+                            </td>
+                            <td>
+                                <button onclick="toggleAgent('${user.userId}', ${user.isLiveAgentMode})">${user.isLiveAgentMode ? '轉回自動' : '接手客服'}</button>
+                                <button onclick="openChat('${user.userId}', '${user.displayName}')" style="background:#4F46E5; color:white; border:none; border-radius:4px;">發送訊息</button>
+                            </td>
                         `;
                         tbody.appendChild(tr);
                     });
                 })
                 .getAllUsers();
+        }
+
+        function toggleAgent(userId, isLive) {
+            const status = !isLive;
+            google.script.run
+                .withSuccessHandler(() => { alert('狀態已更新'); loadUsers(); })
+                .updateLiveAgentStatus(userId, status);
+        }
+
+        function openChat(userId, name) {
+            const text = prompt(`發送訊息給 ${name} (${userId}):`);
+            if (text) {
+                google.script.run
+                    .withSuccessHandler(() => alert('訊息已推送！'))
+                    .sendAdminMessage(userId, text);
+            }
         }
 
         window.onload = loadUsers;

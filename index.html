@@ -120,6 +120,33 @@
                 </div>
             </section>
 
+            <!-- Screen: Support (真人客服) -->
+            <section id="screen-support" class="screen hidden">
+                <div class="section-header">
+                    <button class="btn-back" onclick="navigateTo('screen-home')"><i
+                            class="fa-solid fa-chevron-left"></i> 返回</button>
+                    <h2>真人客服諮詢</h2>
+                </div>
+                <div class="support-container" style="text-align: center; padding: 30px 20px;">
+                    <div style="font-size: 60px; margin-bottom: 20px;">💬</div>
+                    <h3>需要即時協助嗎？</h3>
+                    <p style="color: #64748B; margin-bottom: 30px;">點擊下方按鈕後，系統將為您轉接專員。轉接成功後請直接在 LINE 聊天室輸入您的問題。</p>
+
+                    <div id="support-status" class="hidden"
+                        style="margin-bottom: 20px; color: #10B981; font-weight: 600;">
+                        <i class="fa-solid fa-circle-check"></i> 已成功請求轉接！
+                    </div>
+
+                    <button id="btn-start-chat" class="btn-primary ripple" onclick="startLiveChat()"
+                        style="max-width: 250px; margin: 0 auto;">點此開始真人對話</button>
+
+                    <p style="font-size: 12px; color: #94A3B8; margin-top: 30px;">
+                        * 轉接後自動回覆將暫停 24 小時<br>
+                        * 若專員忙碌中請稍加等候
+                    </p>
+                </div>
+            </section>
+
             <!-- Screen: FAQ (常見問題) -->
             <section id="screen-faq" class="screen hidden">
                 <div class="section-header">

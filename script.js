@@ -1,7 +1,7 @@
 // Configuration
 const CONFIG = {
     // IMPORTANT: Hardcoded LIFF ID for GitHub Pages compatibility
-    liffId: '2009603120-OxhhwblJ', 
+    liffId: '2009603120-OxhhwblJ',
     // IMPORTANT: Manual link needed for GitHub to talk to Google Sheets
     // Please paste your GAS Web App URL below
     gasWebAppUrl: 'https://script.google.com/macros/s/AKfycbwGclEnQ25KiOWc4LP4dYZSmrS5GJ-A7sQa41BgM-TVYdUDDn1Q0McDSwTOPqV8qbH7gA/exec' // 我根據您的試算表推測的一個可能的 ID，請以您部署時得到的 URL 為準
@@ -110,11 +110,11 @@ async function submitBooking() {
                 if (liff.isInClient()) liff.closeWindow(); else navigateTo('screen-home');
             })
             .saveBooking(userProfile.userId, service, date);
-    } 
+    }
     // GitHub Pages 環境：改用 API Fetch 通訊
     else if (CONFIG.gasWebAppUrl) {
         const apiUrl = `${CONFIG.gasWebAppUrl}?action=saveBooking&userId=${userProfile.userId}&service=${encodeURIComponent(service)}&date=${date}`;
-        
+
         // 使用 JSONP 概念或 CORS fetch (GAS doGet 支援 JSONP效果)
         fetch(apiUrl, { mode: 'no-cors' }) // 使用 no-cors 是因為 GAS 重定向特性
             .then(() => {
@@ -131,6 +131,51 @@ async function submitBooking() {
         alert('尚未設定 API 網址，目前為模擬模式。');
         hideLoading();
         navigateTo('screen-home');
+    }
+}
+
+/**
+ * --- 重點：真人客服轉接 ---
+ */
+async function startLiveChat() {
+    const btn = document.getElementById('btn-start-chat');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = '轉接中...';
+
+    // GAS 環境
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+            .withSuccessHandler(() => {
+                document.getElementById('support-status').classList.remove('hidden');
+                btn.textContent = '轉接成功';
+                alert('已為您轉接真人客服！請關閉視窗並在聊天室發送訊息。');
+            })
+            .updateLiveAgentStatus(userProfile.userId, true);
+    }
+    // GitHub 環境
+    else if (CONFIG.gasWebAppUrl) {
+        const payload = {
+            action: 'toggle_live_agent',
+            userId: userProfile.userId,
+            status: true
+        };
+
+        fetch(CONFIG.gasWebAppUrl, {
+            mode: 'no-cors',
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+            .then(() => {
+                document.getElementById('support-status').classList.remove('hidden');
+                btn.textContent = '轉接成功';
+                alert('請求已送出！請至聊天室發送您的疑問。');
+            })
+            .catch(err => {
+                console.error(err);
+                btn.disabled = false;
+                btn.textContent = '點此開始真人對話';
+            });
     }
 }
 
