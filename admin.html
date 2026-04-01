@@ -298,7 +298,10 @@
             tbody.innerHTML = logs.map(log => `
                 <tr>
                     <td style="white-space:nowrap;">${new Date(log.timestamp).toLocaleString()}</td>
-                    <td><small>${log.userId}</small></td>
+                    <td>
+                        <b>${log.userName}</b><br>
+                        <small style="color:#94A3B8;">${log.userId}</small>
+                    </td>
                     <td><span class="badge" style="${getTypeStyle(log.type)}">${log.type}</span></td>
                     <td style="max-width:300px; word-break:break-all;">${log.content}</td>
                 </tr>
